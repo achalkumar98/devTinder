@@ -4,16 +4,30 @@ const app = express();
 
 const port = 7777;
 
-app.get("/", (req, res) => {
-  res.send("Hello world!");
+// Tthe will handle only Get request method
+app.get("/user", (req, res) => {
+  res.send({firstName: "Achal", lastName: "Kumar"}  );
 });
 
-app.get("/hello", (req, res) => {
-    res.send("Hello Hello!");
+app.post("/user", (req, res) => {
+  res.send("Data Successfully Send to the database");
+})
+
+app.put("/user", (req, res) => {
+  res.send("Data Successfully updated to the database");
 });
 
-app.get("/test", (req, res) => {
-    res.send("Hello Hello and hello!");
+app.patch("/user", (req, res) => {
+  res.send("Data Successfully Minor updated to the database");
+});
+
+app.delete("/user", (req, res) => {
+  res.send("Data Successfully deleted from the database");
+});
+
+// This will Handel all the http request methods like get, post, put, delete, patch
+app.use("/test", (req, res) => {
+  res.send("Test route");
 });
 
 app.listen(port, () => {
