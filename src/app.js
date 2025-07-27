@@ -1,25 +1,28 @@
 const express = require("express");
 const connectDB = require("./config/database");
-const User = require("./models/user");
 const app = express();
 const port = 7777;
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
 
-app.post("/signup", async (req, res) => {
-  // Creating a instance of the user model
-  const user = new User({
-    firstName: "Achal",
-    lastName: "Kumar",
-    email: "achal1620@gmail.com",
-    password: "12345678",
-  });
+app.use(cors({
+  origin: "http://localhost:5173/login",
+  credentials: true,
+}));
+app.use(express.json());
+app.use(cookieParser());
 
-  try {
-    await user.save();
-    res.send("User Added Successfully");
-  } catch (err) {
-    res.status(400).send("Error in adding user: " + err.message);
-  }
-});
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");
+const userRouter = require("./routes/user");
+
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
+app.use("/", userRouter);
+
+// Connection Request Api is to send the connection request to the user
 
 connectDB()
   .then(() => {
