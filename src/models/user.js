@@ -9,14 +9,11 @@ const userSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: true,
-      minLength: 3,
+      minLength: 4,
       maxLength: 20,
     },
     lastName: {
       type: String,
-      requrired: true,
-      minLength: 3,
-      maxLength: 20,
     },
     emailId: {
       type: String,
@@ -49,7 +46,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ["male", "female", "other"],
-        message: "{VALUE} is not supported",
+        message: `{VALUE} is not a valid gender type`,
       }
     },
     photoUrl: {

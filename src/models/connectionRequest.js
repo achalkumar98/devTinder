@@ -35,9 +35,9 @@ connectionRequestSchema.pre("save", function (next) {
   next();
 });
 
-const connectionRequest = new mongoose.model(
+const ConnectionRequest = new mongoose.model(
   "connectionRequest",
   connectionRequestSchema
 );
 
-module.exports = connectionRequest;
+module.exports = ConnectionRequest;
