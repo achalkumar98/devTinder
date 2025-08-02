@@ -1,34 +1,61 @@
-const validator = require("validator");
+const { body } = require("express-validator");
 
-const validateSignUpData = (req) => {
-  const { firstName, lastName, emailId, password } = req.body;
-  if (!firstName || !lastName) {
-    throw new Error("First name and last name are required");
-  } else if (!validator.isEmail(emailId)) {
-    throw new Error("Email is not valid");
-  } else if (!validator.isStrongPassword(password)) {
-    throw new Error("Please enter a strong Password ");
-  }
-};
+const validateSignUpData = [
+  body("firstName")
+    .trim()
+    .notEmpty().withMessage("First name is required")
+    .isLength({ min: 3 }).withMessage("First name too short"),
 
-const validateEditProfileData = (req) => {
-  const allowedEditFields = [
-    "firstName",
-    "lastName",
-    "emailId",
-    "photoUrl",
-    "gender",
-    "age",
-    "about",
-    "skills",
-  ];
+  body("lastName")
+    .trim()
+    .notEmpty().withMessage("Last name is required"),
 
-  const isEditAllowed = Object.keys(req.body).every((field) =>
-    allowedEditFields.includes(field)
-  );
+  body("emailId")
+    .trim()
+    .isEmail().withMessage("Invalid email"),
 
-  return isEditAllowed;
-};
+  body("password")
+    .isStrongPassword().withMessage("Password must be strong"),
+];
+
+
+const validateEditProfileData = [
+  body("firstName")
+    .optional()
+    .trim()
+    .isLength({ min: 2 }).withMessage("First name too short"),
+
+  body("lastName")
+    .optional()
+    .trim(),
+
+  body("emailId")
+    .optional()
+    .trim()
+    .isEmail().withMessage("Invalid email"),
+
+  body("photoUrl")
+    .optional()
+    .trim()
+    .isURL().withMessage("Invalid photo URL"),
+
+  body("gender")
+    .optional()
+    .isIn(["male", "female", "other"]).withMessage("Invalid gender"),
+
+  body("age")
+    .optional()
+    .isInt({ min: 18 }).withMessage("Age must be 18 or above"),
+
+  body("about")
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage("About section too long"),
+
+  body("skills")
+    .optional()
+    .isArray().withMessage("Skills should be an array of strings"),
+];
 
 module.exports = {
   validateSignUpData,

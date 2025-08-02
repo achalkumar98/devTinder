@@ -76,7 +76,7 @@ userSchema.index({ firstName: 1, lastName: 1 }); // Compound index
 
 userSchema.methods.getJWT = async function () {
   const user = this; // 'this' refers to the current user instance
-  const token = await jwt.sign({ _id: user._id }, "DEV@Tinder$1620", {
+  const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
     expiresIn: "1d",
   });
   return token;
