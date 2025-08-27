@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema(
         required: true,
     },
     amount: {
-      type: String,
+      type: Number,
       required: true,
     },
     currency: {
@@ -37,7 +37,7 @@ const paymentSchema = new mongoose.Schema(
       lastName: {
         type: String,
       },
-      membershipTypes: {
+      membershipType: {
         type: String,
       },
     },

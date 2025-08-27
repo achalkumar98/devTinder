@@ -5,7 +5,7 @@ const connectDB = require("./config/database");
 const cookieParser = require("cookie-parser");
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 7777;
 
 app.use(cors({
   origin: process.env.CLIENT_ORIGIN,
@@ -22,11 +22,11 @@ const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
 const paymentRouter = require("./routes/payment");
 
-app.use("/", authRouter);
-app.use("/", profileRouter);
-app.use("/", requestRouter);
-app.use("/", userRouter);
-app.use("/", paymentRouter);
+app.use("/api", authRouter);
+app.use("/api", profileRouter);
+app.use("/api", requestRouter);
+app.use("/api", userRouter);
+app.use("/api", paymentRouter);
 
 
 connectDB()

@@ -3,7 +3,6 @@ const validate = require("validator");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -47,7 +46,14 @@ const userSchema = new mongoose.Schema(
       enum: {
         values: ["male", "female", "other"],
         message: `{VALUE} is not a valid gender type`,
-      }
+      },
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    membershipType: {
+      type: String,
     },
     photoUrl: {
       type: String,
@@ -71,6 +77,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
 
 userSchema.index({ firstName: 1, lastName: 1 }); // Compound index
 
