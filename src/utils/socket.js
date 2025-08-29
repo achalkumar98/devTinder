@@ -1,9 +1,13 @@
-const socket = require("socket.io");
+const socketIO = require("socket.io");
 const crypto = require("crypto");
 const { Chat } = require("../models/chat");
-const { timeStamp } = require("console");
 const ConnectionRequest = require("../models/connectionRequest");
+const User = require("../models/user");
 
+// Track online users: { userId: socket.id }
+const onlineUsers = {};
+
+// Create a secret room ID
 const getSecretRoomId = (userId, targetUserId) => {
   return crypto
     .createHash("sha256")
@@ -12,47 +16,90 @@ const getSecretRoomId = (userId, targetUserId) => {
 };
 
 const initializeSocket = (server) => {
-  const io = socket(server, {
-    cors: {
-      origin: process.env.CLIENT_ORIGIN,
-    },
+  const io = socketIO(server, {
+    cors: { origin: process.env.CLIENT_ORIGIN },
   });
 
   io.on("connection", (socket) => {
-    socket.on("joinChat", ({ firstName, userId, targetUserId }) => {
+    console.log("New client connected:", socket.id);
+
+    // Join chat and handle online status
+    socket.on("joinChat", async ({ userId, targetUserId }) => {
+      onlineUsers[userId] = socket.id; // mark user online
+
+      // Verify connection
+      const connected = await ConnectionRequest.findOne({
+        $or: [
+          { fromUserId: userId, toUserId: targetUserId, status: "accepted" },
+          { fromUserId: targetUserId, toUserId: userId, status: "accepted" },
+        ],
+      });
+      if (!connected) return;
+
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
+
+      // Emit to other user that this user is online
+      if (onlineUsers[targetUserId]) {
+        io.to(onlineUsers[targetUserId]).emit("userStatus", { userId, isOnline: true });
+      }
+
+      // Emit to current user the status of the other user
+      const targetOnline = !!onlineUsers[targetUserId];
+      socket.emit("userStatus", { userId: targetUserId, isOnline: targetOnline });
     });
 
-    socket.on(
-      "sendMessage",
-      async ({ firstName, lastName, userId, targetUserId, text }) => {
-        try {
-          const roomId = getSecretRoomId(userId, targetUserId);
-          let chat = await Chat.findOne({
-            participants: { $all: [userId, targetUserId] },
-          });
-          if (!chat) {
-            chat = new Chat({
-              participants: [userId, targetUserId],
-              messages: [],
-            });
-          }
+    // Handle sending messages
+    socket.on("sendMessage", async ({ userId, targetUserId, text }) => {
+      try {
+        const connected = await ConnectionRequest.findOne({
+          $or: [
+            { fromUserId: userId, toUserId: targetUserId, status: "accepted" },
+            { fromUserId: targetUserId, toUserId: userId, status: "accepted" },
+          ],
+        });
+        if (!connected) return;
 
-          chat.messages.push({
-            senderId: userId,
-            text,
-          });
+        const roomId = getSecretRoomId(userId, targetUserId);
 
-          await chat.save();
-          io.to(roomId).emit("messageReceived", { firstName, lastName, text });
-        } catch (err) {
-          console.log(err.message);
+        // Find or create chat
+        let chat = await Chat.findOne({ participants: { $all: [userId, targetUserId] } });
+        if (!chat) {
+          chat = new Chat({ participants: [userId, targetUserId], messages: [] });
         }
-      }
-    );
 
-    socket.on("disconnect", () => {});
+        // Add message
+        chat.messages.push({ senderId: userId, text });
+        await chat.save();
+
+        // Fetch sender info
+        const senderUser = await User.findById(userId).select("firstName lastName");
+
+        // Emit message with full sender info
+        io.to(roomId).emit("messageReceived", {
+          senderId: senderUser._id,
+          firstName: senderUser.firstName,
+          lastName: senderUser.lastName,
+          text,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Handle disconnect and update online status
+    socket.on("disconnect", () => {
+      const offlineUserId = Object.keys(onlineUsers).find(
+        (key) => onlineUsers[key] === socket.id
+      );
+      if (offlineUserId) {
+        delete onlineUsers[offlineUserId];
+
+        // Notify all users who might be chatting with this user
+        io.emit("userStatus", { userId: offlineUserId, isOnline: false });
+      }
+      console.log("Client disconnected:", socket.id);
+    });
   });
 };
 
