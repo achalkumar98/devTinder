@@ -11,13 +11,16 @@ const getRoomId = (userId, targetUserId) =>
 
 const initializeSocket = (server) => {
   const io = new Server(server, {
-    cors: { origin: process.env.CLIENT_ORIGIN, credentials: true },
+    cors: {
+      origin: process.env.CLIENT_ORIGIN,
+      credentials: true,
+    },
+    transports: ["websocket"], // ensures websocket is used
   });
 
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
-    // Join chat
     socket.on("joinChat", async ({ userId, targetUserId }) => {
       if (!userId || !targetUserId) return;
 
@@ -39,17 +42,13 @@ const initializeSocket = (server) => {
           io.to(onlineUsers[targetUserId]).emit("userStatus", { userId, isOnline: true });
         }
 
-        // Send target user status to current user
-        const targetOnline = !!onlineUsers[targetUserId];
-        socket.emit("userStatus", { userId: targetUserId, isOnline: targetOnline });
-
-        console.log(`${userId} joined room ${roomId}`);
+        // Notify current user
+        socket.emit("userStatus", { userId: targetUserId, isOnline: !!onlineUsers[targetUserId] });
       } catch (err) {
         console.error("joinChat error:", err);
       }
     });
 
-    // Send message
     socket.on("sendMessage", async ({ userId, targetUserId, text }) => {
       if (!userId || !targetUserId || !text) return;
 
@@ -76,20 +75,16 @@ const initializeSocket = (server) => {
           lastName: senderUser.lastName,
           text,
         });
-
-        console.log(`Message sent in room ${roomId}: ${text}`);
       } catch (err) {
         console.error("sendMessage error:", err);
       }
     });
 
-    // Disconnect
     socket.on("disconnect", () => {
       const offlineUserId = Object.keys(onlineUsers).find(key => onlineUsers[key] === socket.id);
       if (offlineUserId) {
         delete onlineUsers[offlineUserId];
         io.emit("userStatus", { userId: offlineUserId, isOnline: false });
-        console.log(`${offlineUserId} disconnected`);
       }
     });
   });
